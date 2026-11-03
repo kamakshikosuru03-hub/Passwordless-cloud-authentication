@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ECC Biometric Vault</title>
+    <style>
+        /* Shared Animated Gradient Background */
+        body { 
+            font-family: 'Inter', 'Segoe UI', sans-serif; 
+            background: linear-gradient(-45deg, #0f0c29, #1a73e8, #302b63, #24243e);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            color: #eee; 
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .card { 
+            background: rgba(30, 30, 30, 0.7); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6); 
+            width: 420px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        h2 { 
+            color: #00ff88; 
+            margin-bottom: 5px;
+            font-size: 2em;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+        }
+
+        .subtitle { 
+            font-size: 0.85em; 
+            color: #aaa; 
+            margin-bottom: 25px;
+        }
+
+        #user-profile { 
+            display: none; 
+            background: rgba(0, 255, 136, 0.05); 
+            border: 1px solid rgba(0, 255, 136, 0.3); 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            text-align: left; 
+            font-size: 0.85em;
+            animation: fadeIn 0.5s ease;
+        }
+        .profile-row { margin: 5px 0; display: flex; justify-content: space-between; }
+        .label { color: #00ff88; font-weight: bold; }
+
+        input[type="text"], textarea { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 12px 0; 
+            border: 2px solid rgba(255,255,255,0.1); 
+            border-radius: 10px; 
+            background: rgba(255, 255, 255, 0.05); 
+            color: white; 
+            box-sizing: border-box; 
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus { 
+            border-color: #00ff88; 
+            background: rgba(255, 255, 255, 0.1);
+            outline: none; 
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+        }
+
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            margin-top: 10px;
+        }
+
+        .btn-primary { background: #00ff88; color: #003322; }
+        .btn-capture { background: linear-gradient(135deg, #1a73e8, #00bcd4); color: white; }
+        .btn-submit { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+        .btn-ecdsa { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; }
+        .btn-secondary { background: #333; color: #ccc; font-size: 0.7em; padding: 8px; margin-top: 0; }
+
+        button:hover:not(:disabled) { transform: translateY(-3px); filter: brightness(1.1); }
+        button:disabled { background: #444; color: #777; cursor: not-allowed; }
+
+        #phase2, #phase3 { display: none; }
+
+        #sig-box {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 255, 136, 0.05);
+            border: 1px dashed #00ff88;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            word-break: break-all;
+            color: #00ff88;
+            text-align: left;
+        }
+
+        #msg { margin-top: 20px; font-weight: 500; min-height: 45px; font-size: 0.95em; }
+        .error { color: #ff4d4d; }
+        .success { color: #00ff88; }
+
+        .spinner { 
+            display: inline-block; width: 20px; height: 20px; 
+            border: 3px solid rgba(255,255,255,.2); border-radius: 50%; 
+            border-top-color: #00ff88; animation: spin 0.8s linear infinite; 
+            vertical-align: middle; 
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Cloud Vault</h2>
+        <p id="step-label" class="subtitle">Phase 1: Identity Verification</p>
+        
+        <div id="phase1">
+            <input type="text" id="username_input" placeholder="Username" required>
+            <textarea id="manual_pub_key" rows="4" placeholder="Paste Public Key String Here..." required></textarea>
+            
+            <input type="file" id="pubKeyFile" style="display:none" accept=".pub">
+            <button type="button" class="btn-secondary" onclick="document.getElementById('pubKeyFile').click()">Or Upload .pub File</button>
+            
+            <button class="btn-primary" onclick="verifyIdentity()">Verify Identity</button>
+        </div>
+
+        <div id="user-profile">
+            <div class="profile-row"><span class="label">Name:</span> <span id="p-name"></span></div>
+            <div class="profile-row"><span class="label">Email:</span> <span id="p-email"></span></div>
+            <div class="profile-row"><span class="label">Cloud Node:</span> <span id="p-cloud"></span></div>
+        </div>
+
+        <div id="phase2">
+            <button type="button" id="captureBtn" class="btn-capture">Scan Fingerprint</button>
+            <button type="button" id="submitBtn" class="btn-submit" disabled onclick="verifyMatch()">Verify Key Match</button>
+        </div>
+
+        <div id="phase3">
+            <button type="button" id="ecdsaBtn" class="btn-ecdsa">Authorize ECDSA Signature</button>
+        </div>
+
+        <div id="sig-box">
+            <b style="color: #00ff88;">Visual Signature Generated:</b><br>
+            <span id="sig-value"></span>
+        </div>
+        
+        <div id="msg"></div>
+
+        <div id="footer-links" style="margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <a href="/" style="color: #00ff88; text-decoration: none; font-size: 0.9em; font-weight: bold;">CREATE NEW ACCOUNT</a>
+        </div>
+    </div>
+
+    <script>
+        let capturedData = ""; 
+        let finalPubKey = "";
+
+        const msg = document.getElementById('msg');
+        const stepLabel = document.getElementById('step-label');
+        const footerLinks = document.getElementById('footer-links');
+
+        // --- SESSION RESTORATION ---
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('phase') === '3') {
+                const storedUser = localStorage.getItem('vault_user');
+                if (!storedUser) {
+                    msg.innerHTML = "<span class='error'>Session Error: Please restart Phase 1.</span>";
+                    return;
+                }
+
+                document.getElementById('phase1').style.display = "none";
+                document.getElementById('phase2').style.display = "none";
+                document.getElementById('phase3').style.display = "block";
+                document.getElementById('user-profile').style.display = "block";
+                footerLinks.style.display = "none";
+
+                document.getElementById('p-name').innerText = localStorage.getItem('vault_name') || "Verified User";
+                document.getElementById('p-email').innerText = "Encrypted Session Active";
+                document.getElementById('p-cloud').innerText = "Verified by Audit";
+
+                stepLabel.innerText = "Phase 3: Digital Signature Proof";
+                msg.innerHTML = "<span class='success'>Integrity Audit Complete. Ready to Sign.</span>";
+            }
+        };
+
+        document.getElementById('pubKeyFile').onchange = function(e) {
+            const reader = new FileReader();
+            reader.onload = (ev) => { document.getElementById('manual_pub_key').value = ev.target.result; };
+            reader.readAsText(e.target.files[0]);
+        };
+
+        async function verifyIdentity() {
+            const username = document.getElementById('username_input').value.trim();
+            const pubKey = document.getElementById('manual_pub_key').value.trim();
+
+            if(!username || !pubKey) {
+                msg.innerHTML = "<span class='error'>Username and Key are required.</span>";
+                return;
+            }
+
+            msg.innerHTML = '<div class="spinner"></div> Fetching Cloud Identity...';
+
+            try {
+                const res = await fetch('/get_user_details', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ username: username, public_key: pubKey })
+                });
+                const data = await res.json();
+
+                if(data.status === "success") {
+                    finalPubKey = pubKey;
+                    localStorage.setItem('vault_user', username);
+                    localStorage.setItem('vault_name', data.name);
+                    
+                    document.getElementById('p-name').innerText = data.name;
+                    document.getElementById('p-email').innerText = data.email;
+                    document.getElementById('p-cloud').innerText = data.cloud_id;
+                    
+                    footerLinks.style.display = "none";
+                    document.getElementById('phase1').style.display = "none";
+                    document.getElementById('user-profile').style.display = "block";
+                    document.getElementById('phase2').style.display = "block";
+                    stepLabel.innerText = "Phase 2: Biometric Reconstruction";
+                    msg.innerHTML = "";
+                } else {
+                    msg.innerHTML = `<span class='error'>${data.message}</span>`;
+                }
+            } catch(e) {
+                msg.innerHTML = "<span class='error'>Backend Connection Failed.</span>";
+            }
+        }
+
+        document.getElementById('captureBtn').onclick = async () => {
+            msg.innerHTML = '<div class="spinner"></div> Engaging Scanner...';
+            try {
+                const response = await fetch("http://127.0.0.1:11100/rd/capture", { 
+                    method: 'CAPTURE', 
+                    body: `<?xml version="1.0"?> <PidOptions ver="1.0"> <Opts fCount="1" fType="2" iCount="0" pCount="0" format="0" pidVer="2.0" timeout="10000" posh="UNKNOWN" env="P" /> </PidOptions>` 
+                });
+                const xmlText = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+
+                if (xmlDoc.getElementsByTagName("Resp")[0].getAttribute("errCode") === "0") {
+                    capturedData = xmlDoc.getElementsByTagName("Data")[0].textContent;
+                    msg.innerHTML = "<span class='success'>Fingerprint Captured ✅</span>";
+                    document.getElementById('submitBtn').disabled = false;
+                } else { throw new Error(); }
+            } catch (err) {
+                msg.innerHTML = "<span class='error'>Scanner Error. Check RD Service.</span>";
+            }
+        };
+
+        async function verifyMatch() {
+            msg.innerHTML = '<div class="spinner"></div> Reconstructing Private Key...';
+            try {
+                const res = await fetch('/verify_match', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: localStorage.getItem('vault_user'),
+                        biometric_data: capturedData,
+                        public_key: finalPubKey
+                    })
+                });
+                const data = await res.json();
+                if (data.status === "Matched") {
+                    msg.innerHTML = "<span class='success'>Key Reconstructed! Analyzing Integrity...</span>";
+                    
+                    setTimeout(() => {
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            document.getElementById('phase2').style.display = "none";
+                            document.getElementById('phase3').style.display = "block";
+                            stepLabel.innerText = "Phase 3: Digital Signature Proof";
+                            msg.innerHTML = "";
+                        }
+                    }, 1200);
+                } else {
+                    msg.innerHTML = `<span class='error'>❌ ${data.reason}</span>`;
+                }
+            } catch (err) { msg.innerHTML = "Backend Error."; }
+        }
+
+        document.getElementById('ecdsaBtn').onclick = async () => {
+            const storedUser = localStorage.getItem('vault_user');
+            if (!storedUser) {
+                msg.innerHTML = "<span class='error'>User Session Lost.</span>";
+                return;
+            }
+
+            msg.innerHTML = '<div class="spinner"></div> Verifying Digital Signature...';
+            try {
+                const res = await fetch('/verify_ecdsa', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, // Fixed typo here
+                    body: JSON.stringify({ username: storedUser })
+                });
+                const data = await res.json();
+                if (data.status === "Verified") {
+                    if (data.visual_signature) {
+                        document.getElementById('sig-box').style.display = "block";
+                        document.getElementById('sig-value').innerText = data.visual_signature;
+                    }
+                    msg.innerHTML = "<span class='success'>Signature Match! Unlocking Vault...</span>";
+                    setTimeout(() => { window.location.href = "/dashboard"; }, 3500);
+                } else { 
+                    msg.innerHTML = `<span class='error'>Verification Failed: ${data.reason || 'Unknown Error'}</span>`; 
+                }
+            } catch (err) { msg.innerHTML = "<span class='error'>Connection Error.</span>"; }
+        };
+    </script>
+</body>
+</html>

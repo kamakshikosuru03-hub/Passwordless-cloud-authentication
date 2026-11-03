@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BioCrypt Vault | Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f8f9fc;
+            --sidebar-bg: #0b1120;
+            --sidebar-hover: #1e293b;
+            --accent: #1a73e8;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+            --success: #00c853;
+            --danger: #ff5252;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 260px;
+            background: var(--sidebar-bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            padding-top: 1.5rem;
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            padding: 0 1.5rem 2rem;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-item {
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            transition: 0.3s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--sidebar-hover);
+            color: white;
+        }
+
+        .nav-item.active { border-left: 4px solid var(--accent); }
+
+        /* --- MAIN CONTENT --- */
+        .main-wrapper {
+            margin-left: 260px;
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        /* --- ASSET LIST / VAULT --- */
+        .vault-container {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border: 1px solid #edf2f7;
+            margin-bottom: 1.5rem;
+        }
+
+        .asset-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            transition: 0.2s;
+        }
+
+        .asset-row:hover { background: #f8fafc; }
+
+        .asset-info { display: flex; align-items: center; gap: 1rem; }
+        .asset-icon {
+            width: 40px; height: 40px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent);
+        }
+
+        .action-btn {
+            border: 1px solid #e2e8f0;
+            background: white;
+            color: var(--text-dim);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            text-decoration: none;
+            transition: 0.2s;
+        }
+
+        .action-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+        .search-bar {
+            max-width: 300px;
+            background: #f1f5f9;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+
+        /* Hide sections initially */
+        .content-section { display: none; animation: fadeIn 0.3s ease; }
+        .content-section.active-section { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <i class="fas fa-fingerprint"></i> BioCrypt Cloud
+    </div>
+    <div class="nav-item active" onclick="switchSection('dashboard', this)"><i class="fas fa-th-large"></i> Dashboard</div>
+    <div class="nav-item" onclick="switchSection('assets', this)"><i class="fas fa-folder-open"></i> My Assets</div>
+    <div class="nav-item" onclick="switchSection('logs', this)"><i class="fas fa-shield-alt"></i> Security Logs</div>
+    <div class="nav-item" onclick="switchSection('settings', this)"><i class="fas fa-cog"></i> Settings</div>
+    
+    <div class="mt-auto p-3">
+        <a href="/logout" class="nav-item" style="color: var(--danger);">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </div>
+</div>
+
+<div class="main-wrapper">
+    <div id="dashboard" class="content-section active-section">
+        <header class="top-header">
+            <div>
+                <h2 class="fw-bold m-0">Welcome, {{ user }}</h2>
+                <p class="text-dim small">Your biometric session is active and secured.</p>
+            </div>
+            <div class="d-flex gap-3">
+                <input type="text" class="search-bar" placeholder="Search assets...">
+                <button class="btn btn-primary fw-bold px-4" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-upload me-2"></i> Upload
+                </button>
+                <input type="file" id="fileInput" style="display:none" onchange="upload()">
+            </div>
+        </header>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="vault-container">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-bold m-0">Recently Secured Assets</h5>
+                        <button class="btn btn-sm btn-light" onclick="loadVault()"><i class="fas fa-sync"></i></button>
+                    </div>
+                    <div id="vaultList"></div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="vault-container">
+                    <h5 class="fw-bold mb-3">Quick Secure Note</h5>
+                    <textarea id="noteText" class="form-control mb-3" rows="6" placeholder="Write a secret note..."></textarea>
+                    <button class="btn btn-outline-primary w-100 fw-bold" onclick="addNote()">Encrypt & Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="assets" class="content-section">
+        <h2 class="fw-bold mb-4">My Assets</h2>
+        <div class="vault-container">
+            <div id="fullVaultList"></div>
+        </div>
+    </div>
+
+    <div id="logs" class="content-section">
+        <h2 class="fw-bold mb-4">Security Logs</h2>
+        <div class="vault-container">
+            <p class="text-dim small mb-4">History of biometric access attempts for your account.</p>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>Status</th>
+                            <th>Proof Snippet</th>
+                        </tr>
+                    </thead>
+                    <tbody id="securityLogsList">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings" class="content-section">
+        <h2 class="fw-bold mb-4">Settings</h2>
+        <div class="vault-container" style="max-width: 600px;">
+            <div class="mb-4">
+                <label class="form-label fw-bold">Active Identity</label>
+                <input type="text" class="form-control" value="{{ user }}" disabled>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-bold">Encryption Protocol</label>
+                <p class="text-dim small">Elliptic Curve Cryptography (ECC) with Fuzzy Biometric Reconstruction.</p>
+                <span class="badge bg-success">AES-256-GCM Active</span>
+            </div>
+            <hr>
+            <button class="btn btn-danger" onclick="window.location.href='/logout'">Revoke Authentication</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // NAVIGATION LOGIC
+    function switchSection(sectionId, element) {
+        // Update Sidebar UI
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        element.classList.add('active');
+
+        // Switch Visible Section
+        document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active-section'));
+        document.getElementById(sectionId).classList.add('active-section');
+
+        // Load data specific to section
+        if(sectionId === 'logs') loadLogs();
+        if(sectionId === 'assets' || sectionId === 'dashboard') loadVault();
+    }
+
+    // ORIGINAL DATA LOGIC (RETAINED)
+    async function loadVault() {
+        const res = await fetch('/get_vault');
+        const items = await res.json();
+        const list = document.getElementById('vaultList');
+        const fullList = document.getElementById('fullVaultList');
+        
+        const html = items.map((i, index) => `
+            <div class="asset-row">
+                <div class="asset-info">
+                    <div class="asset-icon">
+                        <i class="${i.type === 'Note' ? 'fas fa-sticky-note' : 'fas fa-file-shield'}"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold" style="font-size: 0.9rem;">${i.name}</div>
+                        <div class="text-dim" style="font-size: 0.75rem;">${i.date}</div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    ${i.type === 'File' ? `
+                        <a href="/view/${i.name}" target="_blank" class="action-btn">View</a>
+                        <a href="/download/${i.name}" class="action-btn">Get</a>
+                    ` : ''}
+                    <button class="btn text-danger btn-sm" onclick="deleteItem(${index})"><i class="far fa-trash-alt"></i></button>
+                </div>
+            </div>
+        `).join('') || '<p class="text-center text-dim py-5">No assets secured yet.</p>';
+
+        list.innerHTML = html;
+        if(fullList) fullList.innerHTML = html;
+    }
+
+    async function loadLogs() {
+        const res = await fetch('/get_admin_logs');
+        const logs = await res.json();
+        const list = document.getElementById('securityLogsList');
+        
+        // Filter logs to only show current user's activity
+        const userLogs = logs.filter(l => l.username === "{{ user }}").reverse();
+
+        list.innerHTML = userLogs.map(l => `
+            <tr>
+                <td class="small">${l.timestamp}</td>
+                <td class="fw-bold">${l.action}</td>
+                <td><span class="badge ${l.status === 'Success' || l.status === 'Matched' ? 'bg-success' : 'bg-danger'}">${l.status}</span></td>
+                <td class="text-dim small"><code>${l.proof}</code></td>
+            </tr>
+        `).join('') || '<tr><td colspan="4" class="text-center py-4">No security events found.</td></tr>';
+    }
+
+    async function upload() {
+        const file = document.getElementById('fileInput').files[0];
+        if(!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/upload_file', { method: 'POST', body: formData });
+        if(res.ok) { loadVault(); }
+    }
+
+    async function addNote() {
+        const note = document.getElementById('noteText').value;
+        if(!note) return;
+        await fetch('/add_note', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ note })
+        });
+        document.getElementById('noteText').value = '';
+        loadVault();
+    }
+
+    async function deleteItem(index) {
+        if(confirm("Permanently delete this item?")) {
+            await fetch('/delete_item', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ index })
+            });
+            loadVault();
+        }
+    }
+
+    loadVault();
+</script>
+</body>
+</html>

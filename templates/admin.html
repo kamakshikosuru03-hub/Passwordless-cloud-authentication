@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ECC Admin - Control Panel</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #eee; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #333; }
+        th { color: #888; background: #252525; font-size: 0.85em; text-transform: uppercase; }
+        
+        .header-flex { display: flex; justify-content: space-between; align-items: center; }
+        
+        .btn { padding: 8px 16px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; transition: 0.2s; outline: none; }
+        .remove-btn { background: #c62828; color: white; font-size: 0.8em; }
+        .remove-btn:hover { background: #d32f2f; }
+        
+        .clear-btn { background: #444; color: #ff5252; border: 1px solid #ff5252; font-size: 0.8em; }
+        .clear-btn:hover { background: #ff5252; color: white; }
+
+        /* UPDATED COLORS */
+        .status-positive { color: #4caf50 !important; font-weight: bold; } /* Green for Success, Verified, Matched */
+        .status-negative { color: #f44336 !important; font-weight: bold; } /* Red for Error, Failed */
+        
+        .proof-text { font-family: 'Courier New', monospace; color: #bb86fc; font-size: 0.85em; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <div class="header-flex">
+        <h1>System Administration</h1>
+    </div>
+
+    <div class="card">
+        <h3>User Directory</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Account Status</th>
+                    <th>Administrative Actions</th>
+                </tr>
+            </thead>
+            <tbody id="userTable"></tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="header-flex">
+            <h3>Live Audit Trail (Cryptographic Events)</h3>
+            <button class="btn clear-btn" onclick="clearHistory()">Empty Logs 🗑️</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Result</th>
+                    <th>Digital Proof / Distance</th>
+                </tr>
+            </thead>
+            <tbody id="logTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        async function refreshData() {
+            try {
+                // Fetching with a timestamp query param prevents browser caching
+                const timestamp = new Date().getTime();
+
+                // 1. Fetch Users
+                const userRes = await fetch(`/admin/users?t=${timestamp}`);
+                const users = await userRes.json();
+                
+                const userTable = document.getElementById('userTable');
+                userTable.innerHTML = users.map(u => `
+                    <tr>
+                        <td><b>${u.username}</b></td>
+                        <td><span class="status-positive">ACTIVE</span></td>
+                        <td>
+                            <button class="btn remove-btn" onclick="act('${u.username}','remove')">Delete User</button>
+                        </td>
+                    </tr>
+                `).join('') || "<tr><td colspan='3'>No users registered.</td></tr>";
+
+                // 2. Fetch Logs
+                const logRes = await fetch(`/get_admin_logs?t=${timestamp}`);
+                const logs = await logRes.json();
+                
+                const logTable = document.getElementById('logTable');
+                logTable.innerHTML = logs.slice().reverse().map(l => {
+                    // COLOR LOGIC: Success, Verified, and Matched turn GREEN
+                    const positiveStatuses = ['Success', 'Verified', 'Matched'];
+                    const isPositive = positiveStatuses.includes(l.status);
+                    const statusClass = isPositive ? 'status-positive' : 'status-negative';
+
+                    return `
+                        <tr>
+                            <td style="color:#888; font-size:0.8em;">${l.timestamp}</td>
+                            <td><b>${l.username}</b></td>
+                            <td>${l.action}</td>
+                            <td class="${statusClass}">${l.status}</td>
+                            <td class="proof-text">${l.proof}</td>
+                        </tr>
+                    `;
+                }).join('') || "<tr><td colspan='5'>No activity recorded.</td></tr>";
+                
+            } catch (err) {
+                console.error("Dashboard refresh failed:", err);
+            }
+        }
+
+        async function act(username, action) {
+            if(!confirm(`Permanently delete user: ${username}?`)) return;
+            try {
+                const response = await fetch('/admin/action', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, action})
+                });
+                const resData = await response.json();
+                if(resData.status === "Success") refreshData();
+            } catch (err) {
+                alert("Action failed.");
+            }
+        }
+
+        async function clearHistory() {
+            if(!confirm("Are you sure you want to purge all audit logs?")) return;
+            try {
+                const response = await fetch('/admin/clear_logs', { method: 'POST' });
+                const resData = await response.json();
+                if(resData.status === "Success") refreshData();
+            } catch (err) {
+                alert("Could not clear logs.");
+            }
+        }
+
+        // Initial Load and periodic auto-refresh
+        refreshData();
+        setInterval(refreshData, 3000); // Automatically updates every 3 seconds
+    </script>
+</body>
+</html>

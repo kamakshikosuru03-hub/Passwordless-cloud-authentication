@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration - ECC Fuzzy Vault</title>
+    <style>
+        /* Modern Vibrant Background with Animation */
+        body { 
+            font-family: 'Inter', 'Segoe UI', sans-serif; 
+            background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a73e8);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+            color: #fff; 
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Glassmorphism Card Effect */
+        .card { 
+            background: rgba(30, 30, 30, 0.7); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
+            width: 450px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        h2 { 
+            color: #4facfe; 
+            margin-bottom: 5px;
+            font-size: 1.8em;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+        }
+
+        .subtitle { 
+            font-size: 0.8em; 
+            color: #aaa; 
+            margin-bottom: 20px;
+        }
+
+        /* Sleek Input Fields */
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border: 2px solid rgba(255,255,255,0.1); 
+            border-radius: 10px; 
+            background: rgba(255, 255, 255, 0.05); 
+            color: white; 
+            box-sizing: border-box; 
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        input:focus { 
+            border-color: #00f2fe; 
+            background: rgba(255, 255, 255, 0.1);
+            outline: none; 
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.3);
+        }
+
+        /* Dynamic Buttons */
+        button, .choice-btn { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            margin-top: 10px;
+            display: block;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        .btn-capture { 
+            background: linear-gradient(135deg, #11998e, #38ef7d); 
+            color: white; 
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+        }
+        
+        .btn-submit { 
+            background: linear-gradient(135deg, #00f2fe, #4facfe); 
+            color: white; 
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+
+        button:hover:not(:disabled) { 
+            opacity: 1; 
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+        }
+
+        button:disabled { 
+            background: #444; 
+            color: #888; 
+            cursor: not-allowed; 
+            box-shadow: none;
+        }
+
+        /* Status & Feedback */
+        #status-indicator { 
+            text-align: center; 
+            margin: 15px 0; 
+            display: none; 
+            padding: 12px; 
+            border-radius: 10px; 
+            font-size: 0.9em; 
+            background: rgba(52, 211, 153, 0.1); 
+            color: #10b981; 
+            border: 1px solid rgba(16, 185, 129, 0.3); 
+        }
+
+        /* Hidden sig-box as per request */
+        #sig-box { display: none; }
+
+        #msg { 
+            margin-top: 20px; 
+            font-weight: 500; 
+            min-height: 40px; 
+            font-size: 0.95em; 
+        }
+        .error { color: #ff4d4d; }
+        .success { color: #00ff88; }
+
+        .spinner { 
+            display: inline-block; 
+            width: 20px; 
+            height: 20px; 
+            border: 3px solid rgba(255,255,255,.2); 
+            border-radius: 50%; 
+            border-top-color: #00f2fe; 
+            animation: spin 0.8s linear infinite; 
+            vertical-align: middle; 
+            margin-right: 10px; 
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        a { color: #4facfe; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="main-title">BioCrypt Initialization</h2>
+        <p class="subtitle">Cloud Identity & Biometric Vault Setup</p>
+        
+        <form id="regForm">
+            <input type="text" id="username" placeholder="Pick a Username" required>
+            <input type="text" id="full_name" placeholder="Full Name" required>
+            <input type="email" id="email" placeholder="Email Address (For Security Alerts)" required>
+            <input type="tel" id="phone" placeholder="Phone Number" required>
+            
+            <div class="input-group">
+                <input type="date" id="dob" onchange="calculateAge()" required title="Date of Birth">
+                <input type="text" id="age" placeholder="Age" readonly>
+            </div>
+
+            <p style="margin: 15px 0 5px; text-align: left; font-size: 0.85em; color: #aaa;">Identity Initialization:</p>
+            <button type="button" id="captureBtn" class="btn-capture">Step 1: Authenticate Finger</button>
+            
+            <div id="status-indicator">Biometric Template Encoded ✅</div>
+
+            <button type="submit" id="regBtn" class="btn-submit" disabled>Step 2: Initialize Cloud Vault</button>
+        </form>
+
+        <div id="msg"></div>
+
+        <p id="footer-text" style="margin-top: 25px; font-size: 0.9em;">
+            Securely registered? <a href="/login_page">Login Access</a>
+        </p>
+    </div>
+
+    <script>
+        let capturedData = ""; 
+
+        const captureBtn = document.getElementById('captureBtn');
+        const regBtn = document.getElementById('regBtn');
+        const statusInd = document.getElementById('status-indicator');
+        const msg = document.getElementById('msg');
+        const regForm = document.getElementById('regForm');
+        const mainTitle = document.getElementById('main-title');
+        const subtitle = document.querySelector('.subtitle');
+        const footerText = document.getElementById('footer-text');
+
+        // Automatic Age Calculation
+        function calculateAge() {
+            const dob = new Date(document.getElementById('dob').value);
+            if (isNaN(dob)) return;
+            const diff = Date.now() - dob.getTime();
+            const ageDate = new Date(diff); 
+            const calculatedAge = Math.abs(ageDate.getUTCFullYear() - 1970);
+            document.getElementById('age').value = calculatedAge + " Years Old";
+        }
+
+        function downloadPublicKeyFile(username, pubKey) {
+            const blob = new Blob([pubKey], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `${username}_public_key.pub`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function showSuccessPopup() {
+            // Hide the form and footer
+            regForm.style.display = "none";
+            subtitle.style.display = "none";
+            footerText.style.display = "none";
+            
+            // Update the UI to show success
+            mainTitle.innerText = "Registration Successful! ✅";
+            mainTitle.style.color = "#00ff88";
+            
+            msg.innerHTML = `
+                <div style="margin-top: 20px; animation: fadeIn 0.5s ease; text-align: center;">
+                    <p style="color: #ccc; margin-bottom: 25px;">Your ECC Public Key has been generated and downloaded. You can now access your secure vault.</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <a href="/login_page" class="btn-submit choice-btn">Go to Login</a>
+                        <a href="/" style="color: #888; text-decoration: none; font-size: 0.9em; margin-top: 15px; display: block;">← Back to Home Page</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        captureBtn.onclick = async () => {
+            captureBtn.disabled = true;
+            statusInd.style.display = "none";
+            msg.className = "";
+            msg.innerHTML = '<div class="spinner"></div> Engaging Mantra Scanner...';
+            
+            const url = "http://127.0.0.1:11100/rd/capture";
+            const captureRequest = `<?xml version="1.0"?> <PidOptions ver="1.0"> <Opts fCount="1" fType="2" iCount="0" pCount="0" format="0" pidVer="2.0" timeout="10000" posh="UNKNOWN" env="P" /> </PidOptions>`;
+
+            try {
+                const response = await fetch(url, { method: 'CAPTURE', body: captureRequest });
+                const xmlText = await response.text();
+                
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                const respTag = xmlDoc.getElementsByTagName("Resp")[0];
+                const errCode = respTag.getAttribute("errCode");
+
+                if (errCode === "0") {
+                    capturedData = xmlDoc.getElementsByTagName("Data")[0].childNodes[0].nodeValue;
+                    statusInd.style.display = "block";
+                    msg.innerHTML = "Biometric data locked!";
+                    msg.className = "success";
+                    regBtn.disabled = false;
+                } else {
+                    throw new Error(respTag.getAttribute("errInfo"));
+                }
+            } catch (err) {
+                msg.innerHTML = "Sensor Error: " + err.message;
+                msg.className = "error";
+            } finally {
+                captureBtn.disabled = false;
+            }
+        };
+
+        regForm.onsubmit = async (e) => {
+            e.preventDefault();
+            
+            regBtn.disabled = true;
+            msg.className = "";
+            msg.innerHTML = '<div class="spinner"></div> Initializing Secure Cloud Vault...';
+
+            try {
+                const res = await fetch('/register', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        full_name: document.getElementById('full_name').value,
+                        email: document.getElementById('email').value,
+                        phone: document.getElementById('phone').value,
+                        dob: document.getElementById('dob').value,
+                        age: document.getElementById('age').value,
+                        biometric_data: capturedData
+                    })
+                });
+                
+                const data = await res.json();
+
+                if (data.status === "Success") {
+                    // Trigger key download if provided
+                    if (data.public_key) {
+                        downloadPublicKeyFile(document.getElementById('username').value, data.public_key);
+                    }
+                    
+                    // Show the success UI choice
+                    showSuccessPopup();
+                } else {
+                    regBtn.disabled = false;
+                    msg.className = "error";
+                    msg.innerHTML = "Vault Error: " + data.reason;
+                }
+            } catch (err) {
+                regBtn.disabled = false;
+                msg.innerHTML = "Cloud Timeout. Check backend server.";
+                msg.className = "error";
+            }
+        };
+    </script>
+</body>
+</html>
